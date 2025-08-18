@@ -6,11 +6,20 @@ from azure.identity import ChainedTokenCredential, ManagedIdentityCredential, Az
 from azure.identity.aio import ChainedTokenCredential as AsyncChainedTokenCredential, ManagedIdentityCredential as AsyncManagedIdentityCredential, AzureCliCredential as AsyncAzureCliCredential
 from azure.appconfiguration import AzureAppConfigurationClient
 from azure.core.exceptions import AzureError
-from azure.appconfiguration.provider import (
-    AzureAppConfigurationKeyVaultOptions,
-    load,
-    SettingSelector
-)
+try:
+    from azure.appconfiguration.provider import (
+        AzureAppConfigurationKeyVaultOptions,
+        load,
+        SettingSelector
+    )
+    APP_CONFIG_PROVIDER_AVAILABLE = True
+except ImportError:
+    logging.warning("azure.appconfiguration.provider not available - some configuration features may be limited")
+    APP_CONFIG_PROVIDER_AVAILABLE = False
+    # Define fallback classes/functions if needed
+    AzureAppConfigurationKeyVaultOptions = None
+    load = None
+    SettingSelector = None
 
 from tenacity import retry, wait_random_exponential, stop_after_attempt, RetryError
 
@@ -54,20 +63,29 @@ class AppConfigClient:
             AsyncAzureCliCredential()
         )
 
-        orchestrator_label_selector = SettingSelector(label_filter='gpt-rag-orchestrator', key_filter='*')
-        base_label_selector = SettingSelector(label_filter='gpt-rag', key_filter='*')
-        no_label_selector = SettingSelector(label_filter=None, key_filter='*')
+        orchestrator_label_selector = SettingSelector(label_filter='gpt-rag-orchestrator', key_filter='*') if APP_CONFIG_PROVIDER_AVAILABLE else None
+        base_label_selector = SettingSelector(label_filter='gpt-rag', key_filter='*') if APP_CONFIG_PROVIDER_AVAILABLE else None
+        no_label_selector = SettingSelector(label_filter=None, key_filter='*') if APP_CONFIG_PROVIDER_AVAILABLE else None
 
-        try:
-            self.client = load(selects=[orchestrator_label_selector, base_label_selector, no_label_selector],endpoint=endpoint, credential=self.credential,key_vault_options=AzureAppConfigurationKeyVaultOptions(credential=self.credential))
-        except Exception as e:
-            logging.log("error", f"Unable to connect to Azure App Configuration. Please check APP_CONFIGURATION_URI setting. {e}")
+        if APP_CONFIG_PROVIDER_AVAILABLE:
             try:
-                connection_string = os.environ["AZURE_APPCONFIG_CONNECTION_STRING"]
-                # Connect to Azure App Configuration using a connection string.
-                self.client = load(connection_string=connection_string, key_vault_options=AzureAppConfigurationKeyVaultOptions(credential=self.credential))
+                self.client = load(selects=[orchestrator_label_selector, base_label_selector, no_label_selector],endpoint=endpoint, credential=self.credential,key_vault_options=AzureAppConfigurationKeyVaultOptions(credential=self.credential))
             except Exception as e:
-                raise Exception(f"Unable to connect to Azure App Configuration. Please check your connection string or endpoint. {e}")
+                logging.log("error", f"Unable to connect to Azure App Configuration. Please check APP_CONFIGURATION_URI setting. {e}")
+                try:
+                    connection_string = os.environ["AZURE_APPCONFIG_CONNECTION_STRING"]
+                    # Connect to Azure App Configuration using a connection string.
+                    self.client = load(connection_string=connection_string, key_vault_options=AzureAppConfigurationKeyVaultOptions(credential=self.credential))
+                except Exception as e:
+                    raise Exception(f"Unable to connect to Azure App Configuration. Please check your connection string or endpoint. {e}")
+        else:
+            # Fallback to basic client without provider features
+            logging.warning("Using basic Azure App Configuration client - advanced features may not be available")
+            try:
+                self.client = AzureAppConfigurationClient(base_url=endpoint, credential=self.credential)
+            except Exception as e:
+                logging.error(f"Failed to initialize Azure App Configuration client: {e}")
+                self.client = None
 
 
     def get(self, key: str, default: Any = None, type: type = str) -> Any:
@@ -132,9 +150,21 @@ class AppConfigClient:
     )
     def get_config_with_retry(self, name):
         try:
-            return self.client[name]
+            if APP_CONFIG_PROVIDER_AVAILABLE and hasattr(self.client, '__getitem__'):
+                # Using provider client (acts like a dictionary)
+                return self.client[name]
+            elif hasattr(self.client, 'get_configuration_setting'):
+                # Using basic AzureAppConfigurationClient
+                setting = self.client.get_configuration_setting(key=name)
+                return setting.value if setting else None
+            else:
+                logging.warning(f"Unable to retrieve config for {name} - no suitable client available")
+                return None
         except RetryError:
             pass
+        except Exception as e:
+            logging.warning(f"Error retrieving config for {name}: {e}")
+            return None
 
     # Helper functions for reading environment variables
     def read_env_variable(self, var_name, default=None):
