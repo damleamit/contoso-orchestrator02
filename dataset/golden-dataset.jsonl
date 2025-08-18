@@ -3,3 +3,4 @@
 {"query": "Name three core values of Contoso Electronics.", "ground-truth": "Three core values are Quality, Integrity, and Innovation."}
 {"query": "What should an employee do if they witness workplace violence?", "ground-truth": "They should immediately notify their supervisor or Human Resources Representative."}
 {"query": "List two key components of the workplace safety program.", "ground-truth": "Key components include hazard identification and risk assessment, and the provision of personal protective equipment (PPE)."}
+{"query": "When does the performance reviews are conducted?", "ground-truth": "In Contoso Electronics performance reviews are conducted annually."}
