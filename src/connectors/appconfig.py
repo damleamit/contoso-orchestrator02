@@ -21,7 +21,23 @@ except ImportError:
     load = None
     SettingSelector = None
 
-from tenacity import retry, wait_random_exponential, stop_after_attempt, RetryError
+try:
+    from tenacity import retry, wait_random_exponential, stop_after_attempt, RetryError
+    TENACITY_AVAILABLE = True
+except ImportError:
+    logging.warning("tenacity not available - retry functionality will be limited")
+    TENACITY_AVAILABLE = False
+    # Define fallback decorators that do nothing
+    def retry(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    def wait_random_exponential(*args, **kwargs):
+        pass
+    def stop_after_attempt(*args, **kwargs):
+        pass
+    class RetryError(Exception):
+        pass
 
 class AppConfigClient:
 
@@ -131,6 +147,8 @@ class AppConfigClient:
             raise Exception(f'The configuration variable {key} not found.')
         
     def retry_before_sleep(self, retry_state):
+        if not TENACITY_AVAILABLE:
+            return
         # Log the outcome of each retry attempt.
         message = f"""Retrying {retry_state.fn}:
                         attempt {retry_state.attempt_number}
@@ -143,12 +161,22 @@ class AppConfigClient:
         else:
             logging.warning(message)
 
-    @retry(
-        wait=wait_random_exponential(multiplier=1, max=5),
-        stop=stop_after_attempt(5),
-        before_sleep=retry_before_sleep
-    )
     def get_config_with_retry(self, name):
+        if TENACITY_AVAILABLE:
+            # Apply retry decorator
+            @retry(
+                wait=wait_random_exponential(multiplier=1, max=5),
+                stop=stop_after_attempt(5),
+                before_sleep=self.retry_before_sleep
+            )
+            def _get_with_retry():
+                return self._get_config_impl(name)
+            return _get_with_retry()
+        else:
+            # No retry, just call directly
+            return self._get_config_impl(name)
+
+    def _get_config_impl(self, name):
         try:
             if APP_CONFIG_PROVIDER_AVAILABLE and hasattr(self.client, '__getitem__'):
                 # Using provider client (acts like a dictionary)

@@ -2,7 +2,23 @@ import logging
 import pyodbc
 import asyncio
 import aiohttp
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+try:
+    from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+    TENACITY_AVAILABLE = True
+except ImportError:
+    logging.warning("tenacity not available in fabric.py - retry functionality will be disabled")
+    TENACITY_AVAILABLE = False
+    # Define fallback decorators
+    def retry(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    def stop_after_attempt(*args, **kwargs):
+        pass
+    def wait_exponential(*args, **kwargs):
+        pass
+    def retry_if_exception_type(*args, **kwargs):
+        pass
 from azure.identity.aio import ClientSecretCredential
 
 from connectors.keyvault import get_secret, generate_valid_secret_name
