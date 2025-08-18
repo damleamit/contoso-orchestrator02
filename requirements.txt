@@ -8,6 +8,7 @@ azure-storage-blob==12.25.1
 azure-appconfiguration==1.7.1
 azure.appconfiguration.provider
 azure-ai-projects==1.0.0b11
+azure-ai-agents
 azure-search-documents==11.5.2
 
 # AI and NLP dependencies
@@ -22,6 +23,8 @@ pydantic==2.11.4
 
 # Utility dependencies
 tenacity
+h11
+pandas
 
 # For evaluation
 requests==2.32.4
@@ -34,8 +37,12 @@ uvicorn==0.34.1
 # NL2SQL dependencies
 sqlparse==0.5.1
 pyodbc==5.1.0
-#opentelemetry
+
+# OpenTelemetry dependencies
 azure-monitor-opentelemetry
 azure-monitor-opentelemetry-exporter
-opentelemetry-instrumentation-httpx==0.52b1
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation
+opentelemetry-instrumentation-httpx
 opentelemetry-instrumentation-fastapi
