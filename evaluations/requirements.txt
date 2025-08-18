@@ -27,3 +27,4 @@ azure-keyvault-secrets==4.7.0
 
 # (Optional) If you ever load from a .env in this venv:
 # python-dotenv
+uvicorn[standard]
