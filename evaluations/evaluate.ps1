@@ -63,7 +63,16 @@ try {
     Write-Host "${BLUE}▶ Verifying critical imports...${NC}"
     $verifyScript = @"
 import sys
+import os
 print('Python version:', sys.version)
+print('Environment variables:')
+for key in ['APP_CONFIG_ENDPOINT', 'AZURE_CLIENT_ID', 'AZURE_TENANT_ID', 'allow_environment_variables']:
+    value = os.environ.get(key, 'NOT SET')
+    if key == 'AZURE_CLIENT_SECRET':
+        value = '***' if value != 'NOT SET' else 'NOT SET'
+    print(f'  {key}: {value}')
+
+print('\nTesting imports...')
 try:
     import tiktoken
     print('✅ tiktoken imported successfully')
@@ -77,6 +86,23 @@ try:
 except ImportError as e:
     print('❌ Failed to import pyodbc:', e)
     sys.exit(1)
+
+print('\nTesting Azure App Configuration connection...')
+try:
+    from src.connectors.appconfig import AppConfigClient
+    config_client = AppConfigClient()
+    print('✅ AppConfigClient initialized successfully')
+    
+    # Try to get a test value
+    try:
+        test_value = config_client.get_value('ORCHESTRATOR_APP_NAME', default='test-default')
+        print(f'✅ Configuration test successful, got value: {test_value}')
+    except Exception as e:
+        print(f'⚠️ Configuration value retrieval failed (will use defaults): {e}')
+        
+except Exception as e:
+    print(f'❌ AppConfigClient initialization failed: {e}')
+    print('This may be expected in CI/CD environments without App Config access')
 
 try:
     from src.main import app

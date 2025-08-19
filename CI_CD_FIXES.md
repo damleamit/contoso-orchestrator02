@@ -193,3 +193,4 @@ With these fixes, the CI/CD pipeline should:
 - `requirements.txt` - Updated package versions for compatibility
 - `PYTHON_VERSION_COMPATIBILITY.md` - Documentation about Python version requirements
 - `ADDITIONAL_CI_CD_FIXES.md` - Latest configuration and logging fixes
+- `AZURE_APP_CONFIG_AUTH_FIX.md` - Azure App Configuration authentication troubleshooting
