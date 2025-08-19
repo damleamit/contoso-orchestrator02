@@ -6,6 +6,7 @@ The GitHub CI/CD pipeline was failing with the following errors:
 - `ModuleNotFoundError: No module named 'tiktoken'`
 - `ModuleNotFoundError: No module named 'pyodbc'`
 - Import errors for `src.main` module
+- **NEW**: `ERROR: Could not find a version that satisfies the requirement azure-ai-agents==1.0.0b9`
 
 ## Root Causes
 
@@ -13,10 +14,61 @@ The GitHub CI/CD pipeline was failing with the following errors:
 2. **Python path configuration**: The `src` module wasn't properly accessible during CI/CD runs
 3. **Missing system dependencies**: ODBC drivers weren't installed in the CI/CD environment
 4. **Inconsistent requirement files**: The evaluation requirements file was missing several critical dependencies
+5. **Outdated package versions**: Azure AI packages had specific beta versions that are no longer available
 
 ## Solutions Implemented
 
-### 1. Updated `evaluations/requirements.txt`
+### 1. Updated Package Versions
+
+Fixed outdated Azure AI package versions:
+```diff
+- azure-ai-projects==1.0.0b11
+- azure-ai-agents==1.0.0b9
++ azure-ai-projects>=1.0.0
++ azure-ai-agents>=1.1.0
+```
+
+Also updated OpenTelemetry packages to use flexible version ranges:
+```diff
+- opentelemetry-instrumentation==0.48b0
+- azure-monitor-opentelemetry-exporter==1.0.0b28
++ opentelemetry-instrumentation>=0.48b0
++ azure-monitor-opentelemetry-exporter>=1.0.0b28
+```
+
+And fixed pandas compilation issues on Windows:
+```diff
+- pandas==2.2.2
++ pandas>=2.2.2
+```
+
+## Solutions Implemented
+
+### 1. Updated Package Versions
+
+Fixed outdated Azure AI package versions:
+```diff
+- azure-ai-projects==1.0.0b11
+- azure-ai-agents==1.0.0b9
++ azure-ai-projects>=1.0.0
++ azure-ai-agents>=1.1.0
+```
+
+Also updated OpenTelemetry packages to use flexible version ranges:
+```diff
+- opentelemetry-instrumentation==0.48b0
+- azure-monitor-opentelemetry-exporter==1.0.0b28
++ opentelemetry-instrumentation>=0.48b0
++ azure-monitor-opentelemetry-exporter>=1.0.0b28
+```
+
+And fixed pandas compilation issues on Windows:
+```diff
+- pandas==2.2.2
++ pandas>=2.2.2
+```
+
+### 2. Updated `evaluations/requirements.txt`
 
 Added all critical dependencies from the main requirements file:
 - `tiktoken==0.7.0`
@@ -25,7 +77,7 @@ Added all critical dependencies from the main requirements file:
 - `tenacity==9.0.0`
 - All other missing Azure SDK and AI dependencies
 
-### 2. Enhanced Installation Scripts
+### 3. Enhanced Installation Scripts
 
 #### Bash Script (`evaluations/evaluate.sh`)
 - Added proper error handling and colored output
@@ -40,7 +92,7 @@ Added all critical dependencies from the main requirements file:
 - ANSI color support for better output
 - Consistent with bash script functionality
 
-### 3. Updated GitHub Actions Workflows
+### 4. Updated GitHub Actions Workflows
 
 #### PR Pipeline (`.github/workflows/pr_pipeline.yaml`)
 ```yaml
@@ -62,7 +114,7 @@ Added all critical dependencies from the main requirements file:
 - Added same pip caching and system dependency installation
 - Ensures ODBC drivers are available for `pyodbc`
 
-### 4. Verification Steps Added
+### 5. Verification Steps Added
 
 Both scripts now include verification steps that:
 1. Check if critical packages can be imported
