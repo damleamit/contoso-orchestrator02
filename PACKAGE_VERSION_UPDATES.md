@@ -1,14 +1,24 @@
-# Package Version Updates Summary
+# Package Version and Python Compatibility Updates Summary
 
-## Problem
-CI/CD pipeline failed with: `ERROR: Could not find a version that satisfies the requirement azure-ai-agents==1.0.0b9`
+## Problems
+1. CI/CD pipeline failed with: `ERROR: Could not find a version that satisfies the requirement azure-ai-agents==1.0.0b9`
+2. **NEW**: `tiktoken` build failure: "the configured Python interpreter version (3.13) is newer than PyO3's maximum supported version (3.12)"
 
-## Root Cause
-The specified beta versions were no longer available in the package index:
-- `azure-ai-agents==1.0.0b9` - Available versions: 1.0.0b1, 1.0.0b2, 1.0.0b3, 1.0.0, 1.0.1, 1.0.2, 1.1.0b1, 1.1.0b2, 1.1.0b3, 1.1.0b4, 1.1.0, 1.2.0b1, 1.2.0b2
+## Root Causes
+1. The specified beta versions were no longer available in the package index
+2. **Python 3.13 Compatibility**: `tiktoken` is built with Rust using PyO3, which doesn't support Python 3.13 yet
 
-## Solution
-Updated both `requirements.txt` and `evaluations/requirements.txt`:
+## Solutions
+Updated GitHub Actions workflows, requirements files, and improved compatibility:
+
+### Python Version Downgrade
+```diff
+# GitHub Actions workflows
+- python-version: '3.13.7'
++ python-version: '3.12'
+```
+
+**Why**: `tiktoken` package uses Rust PyO3 bindings that don't support Python 3.13 yet. Python 3.12 is the latest supported version.
 
 ### Azure AI Packages
 ```diff
@@ -44,7 +54,8 @@ Tested package resolution with `pip install --dry-run`:
 - ✅ Pandas will use pre-built wheels instead of source compilation
 
 ## Impact
-- **Compatibility**: Using stable releases instead of specific beta versions
+- **Python Compatibility**: Using Python 3.12 ensures all Rust-based packages (tiktoken) can be built
+- **Package Compatibility**: Using stable releases instead of specific beta versions
 - **Flexibility**: Version ranges allow for patch updates without breaking
-- **Reliability**: Avoids future CI/CD failures due to unavailable package versions
+- **Reliability**: Avoids future CI/CD failures due to unavailable package versions or Python incompatibilities
 - **Performance**: Pandas uses pre-compiled wheels, faster installation

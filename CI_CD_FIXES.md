@@ -6,7 +6,8 @@ The GitHub CI/CD pipeline was failing with the following errors:
 - `ModuleNotFoundError: No module named 'tiktoken'`
 - `ModuleNotFoundError: No module named 'pyodbc'`
 - Import errors for `src.main` module
-- **NEW**: `ERROR: Could not find a version that satisfies the requirement azure-ai-agents==1.0.0b9`
+- `ERROR: Could not find a version that satisfies the requirement azure-ai-agents==1.0.0b9`
+- **NEW**: `tiktoken` build failure with Python 3.13: "the configured Python interpreter version (3.13) is newer than PyO3's maximum supported version (3.12)"
 
 ## Root Causes
 
@@ -15,6 +16,7 @@ The GitHub CI/CD pipeline was failing with the following errors:
 3. **Missing system dependencies**: ODBC drivers weren't installed in the CI/CD environment
 4. **Inconsistent requirement files**: The evaluation requirements file was missing several critical dependencies
 5. **Outdated package versions**: Azure AI packages had specific beta versions that are no longer available
+6. **Python version compatibility**: `tiktoken` package (built with Rust/PyO3) doesn't support Python 3.13 yet, only up to Python 3.12
 
 ## Solutions Implemented
 
@@ -68,7 +70,17 @@ And fixed pandas compilation issues on Windows:
 + pandas>=2.2.2
 ```
 
-### 2. Updated `evaluations/requirements.txt`
+### 2. Fixed Python Version Compatibility
+
+Updated GitHub Actions workflows to use Python 3.12 instead of 3.13:
+```diff
+- python-version: '3.13.7'
++ python-version: '3.12'
+```
+
+This resolves the `tiktoken` build issue where PyO3 (Rust-Python bindings) doesn't support Python 3.13 yet.
+
+### 3. Updated `evaluations/requirements.txt`
 
 Added all critical dependencies from the main requirements file:
 - `tiktoken==0.7.0`
@@ -77,7 +89,7 @@ Added all critical dependencies from the main requirements file:
 - `tenacity==9.0.0`
 - All other missing Azure SDK and AI dependencies
 
-### 3. Enhanced Installation Scripts
+### 4. Enhanced Installation Scripts
 
 #### Bash Script (`evaluations/evaluate.sh`)
 - Added proper error handling and colored output
@@ -92,7 +104,7 @@ Added all critical dependencies from the main requirements file:
 - ANSI color support for better output
 - Consistent with bash script functionality
 
-### 4. Updated GitHub Actions Workflows
+### 5. Updated GitHub Actions Workflows
 
 #### PR Pipeline (`.github/workflows/pr_pipeline.yaml`)
 ```yaml
@@ -114,7 +126,7 @@ Added all critical dependencies from the main requirements file:
 - Added same pip caching and system dependency installation
 - Ensures ODBC drivers are available for `pyodbc`
 
-### 5. Verification Steps Added
+### 6. Verification Steps Added
 
 Both scripts now include verification steps that:
 1. Check if critical packages can be imported
@@ -159,17 +171,20 @@ To test locally:
 ## Expected CI/CD Behavior
 
 With these fixes, the CI/CD pipeline should:
-1. ✅ Install all system dependencies (ODBC drivers)
-2. ✅ Install Python packages from both requirement files
-3. ✅ Verify all imports work before proceeding
-4. ✅ Successfully import `src.main.app`
-5. ✅ Generate evaluation input without errors
-6. ✅ Complete the pipeline successfully
+1. ✅ Use Python 3.12 (compatible with all packages including tiktoken)
+2. ✅ Install all system dependencies (ODBC drivers)
+3. ✅ Install Python packages from both requirement files with correct versions
+4. ✅ Verify all imports work before proceeding
+5. ✅ Successfully import `src.main.app`
+6. ✅ Generate evaluation input without errors
+7. ✅ Complete the pipeline successfully
 
 ## Files Modified
 
-- `evaluations/requirements.txt` - Added missing dependencies
+- `evaluations/requirements.txt` - Added missing dependencies and updated versions
 - `evaluations/evaluate.sh` - Enhanced with better error handling and verification
 - `evaluations/evaluate.ps1` - Enhanced PowerShell version
-- `.github/workflows/pr_pipeline.yaml` - Added system dependencies and caching
-- `.github/workflows/cicd_pipeline.yaml` - Added system dependencies and caching
+- `.github/workflows/pr_pipeline.yaml` - Updated Python version and added system dependencies
+- `.github/workflows/cicd_pipeline.yaml` - Updated Python version and added system dependencies
+- `requirements.txt` - Updated package versions for compatibility
+- `PYTHON_VERSION_COMPATIBILITY.md` - Documentation about Python version requirements
