@@ -24,7 +24,7 @@ azure-ai-agents
 azure-ai-evaluation
 
 # - Key Vault (if you use it for secrets)
-azure-keyvault-secrets==4.7.0
+#azure-keyvault-secrets==4.7.0
 
 # (Optional) If you ever load from a .env in this venv:
 python-dotenv==1.1.0
