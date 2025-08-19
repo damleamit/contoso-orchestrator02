@@ -1,9 +1,9 @@
 name: CI/CD Dev Pipeline
-
+# changed from develop to genaiops-workshop
 on:
   push:
     branches:
-      - develop
+      - genaiops-workshop
 
 jobs:
   deploy:
