@@ -53,3 +53,6 @@ opentelemetry-instrumentation-httpx>=0.48b0
 azure-monitor-opentelemetry==1.6.0
 azure-monitor-opentelemetry-exporter>=1.0.0b28
 
+# Pin setuptools to avoid pkg_resources deprecation warnings
+setuptools<81
+

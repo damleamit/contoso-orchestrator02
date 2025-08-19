@@ -50,11 +50,14 @@ try {
     }
 
     # 4) Set up Python path to ensure imports work
-    Write-Host "${BLUE}▶ Setting up Python path...${NC}"
+    Write-Host "${BLUE}▶ Setting up Python path and environment...${NC}"
     $currentPath = (Get-Location).Path
     $srcPath = Join-Path $currentPath "src"
     $env:PYTHONPATH = "$currentPath;$srcPath;$($env:PYTHONPATH)"
+    # Allow environment variables to be used when Azure App Configuration is not available
+    $env:allow_environment_variables = "true"
     Write-Host "${GREEN}✅ PYTHONPATH configured: $($env:PYTHONPATH)${NC}"
+    Write-Host "${GREEN}✅ Environment variables enabled for configuration fallback${NC}"
 
     # 5) Verify critical imports work
     Write-Host "${BLUE}▶ Verifying critical imports...${NC}"

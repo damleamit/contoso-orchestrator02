@@ -46,3 +46,6 @@ opentelemetry-sdk==1.27.0
 opentelemetry-instrumentation>=0.48b0
 opentelemetry-instrumentation-httpx>=0.48b0
 opentelemetry-instrumentation-fastapi>=0.48b0
+
+# Pin setuptools to avoid pkg_resources deprecation warnings
+setuptools<81

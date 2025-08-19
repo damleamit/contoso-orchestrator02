@@ -62,9 +62,12 @@ else
 fi
 
 # 4) Set up Python path to ensure imports work
-echo -e "${BLUE}▶ Setting up Python path...${NC}"
+echo -e "${BLUE}▶ Setting up Python path and environment...${NC}"
 export PYTHONPATH="$(pwd):$(pwd)/src:${PYTHONPATH:-}"
+# Allow environment variables to be used when Azure App Configuration is not available
+export allow_environment_variables=true
 echo -e "${GREEN}✅ PYTHONPATH configured: $PYTHONPATH${NC}"
+echo -e "${GREEN}✅ Environment variables enabled for configuration fallback${NC}"
 
 # 5) Verify critical imports work
 echo -e "${BLUE}▶ Verifying critical imports...${NC}"

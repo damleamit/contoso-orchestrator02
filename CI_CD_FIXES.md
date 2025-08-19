@@ -7,7 +7,9 @@ The GitHub CI/CD pipeline was failing with the following errors:
 - `ModuleNotFoundError: No module named 'pyodbc'`
 - Import errors for `src.main` module
 - `ERROR: Could not find a version that satisfies the requirement azure-ai-agents==1.0.0b9`
-- **NEW**: `tiktoken` build failure with Python 3.13: "the configured Python interpreter version (3.13) is newer than PyO3's maximum supported version (3.12)"
+- `tiktoken` build failure with Python 3.13: "the configured Python interpreter version (3.13) is newer than PyO3's maximum supported version (3.12)"
+- **LATEST**: Logging error `TypeError: level must be an integer` in configuration loading
+- **LATEST**: Azure App Configuration connection failures causing hard stops in CI/CD
 
 ## Root Causes
 
@@ -17,6 +19,8 @@ The GitHub CI/CD pipeline was failing with the following errors:
 4. **Inconsistent requirement files**: The evaluation requirements file was missing several critical dependencies
 5. **Outdated package versions**: Azure AI packages had specific beta versions that are no longer available
 6. **Python version compatibility**: `tiktoken` package (built with Rust/PyO3) doesn't support Python 3.13 yet, only up to Python 3.12
+7. **Configuration logging errors**: Incorrect logging method calls causing TypeErrors  
+8. **Configuration resilience**: Hard failures when Azure App Configuration is not accessible in CI/CD environments
 
 ## Solutions Implemented
 
@@ -188,3 +192,4 @@ With these fixes, the CI/CD pipeline should:
 - `.github/workflows/cicd_pipeline.yaml` - Updated Python version and added system dependencies
 - `requirements.txt` - Updated package versions for compatibility
 - `PYTHON_VERSION_COMPATIBILITY.md` - Documentation about Python version requirements
+- `ADDITIONAL_CI_CD_FIXES.md` - Latest configuration and logging fixes
