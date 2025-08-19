@@ -12,9 +12,9 @@ jobs:
 
     # Pull all four dev-environment variables and your SP secrets
     env:
-      AZURE_CLIENT_ID:       ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET:   ${{ secrets.AZURE_CLIENT_SECRET }}
-      AZURE_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_CLIENT_ID:       ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
+      AZURE_CLIENT_SECRET:   ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
+      AZURE_TENANT_ID:       ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
       APP_CONFIG_ENDPOINT:   ${{ vars.APP_CONFIG_ENDPOINT }}
 
     steps:
@@ -33,11 +33,41 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Verify Azure authentication and App Config access
+        run: |
+          echo "Verifying Azure CLI authentication..."
+          az account show
+          echo "Checking access to App Configuration..."
+          # Extract the config name from the endpoint
+          CONFIG_NAME=$(echo "$APP_CONFIG_ENDPOINT" | sed 's|https://||' | sed 's|\.azconfig\.io||')
+          echo "Config name: $CONFIG_NAME"
+          # Test if we can list keys (this will verify authentication and permissions)
+          az appconfig kv list --name "$CONFIG_NAME" --auth-mode login --top 1 || echo "App Config access test failed, but continuing..."
+
       - name: Setup Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install system dependencies (Ubuntu)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unixodbc-dev
+
       - name: Deploy to Azure
+        env:
+          # Ensure Azure credentials are available for any Python components
+          AZURE_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
+          AZURE_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
+          AZURE_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
+          APP_CONFIG_ENDPOINT: ${{ vars.APP_CONFIG_ENDPOINT }}
         run: |
           ./scripts/deploy.sh

@@ -3,27 +3,56 @@ fastapi==0.115.12
 requests==2.32.3
 
 # — Data handling & reporting
-pandas
+pandas>=2.2.2
 
-# — Azure App Configuration & Identity (AppConfigClient)
+# — Azure SDK dependencies (matching main requirements.txt)
 azure-identity==1.21.0
 azure-appconfiguration==1.7.1
-
-# — Cosmos DB (async client used by your CosmosDBClient)
+azure-appconfiguration-provider==1.3.0
 azure-cosmos==4.5.1
-
-# — Azure AI Search (used by generate_eval_input.py)
 azure-search-documents==11.5.2
+azure-ai-projects>=1.0.0
+azure-ai-agents>=1.1.0
+azure-keyvault-secrets==4.8.0
+azure-storage-blob==12.25.1
+azure-mgmt-web==8.0.0
+azure-mgmt-storage==22.1.1
 
-# — Azure AI Projects & Agents (used by your strategies & evaluate.py)
-azure-ai-projects==1.0.0b11
-azure-ai-agents
+# — AI and NLP dependencies (matching main requirements.txt)
+tiktoken==0.7.0
+openai==1.76.2
+prompty==0.1.50
+
+# — Semantic Kernel dependencies (matching main requirements.txt)
+semantic-kernel[mcp]==1.34.0
+aiohttp==3.10.11
+pydantic==2.11.4
+
+# — Utility dependencies (matching main requirements.txt)
+tenacity==9.0.0
+h11==0.14.0
+python-dotenv==1.1.0
+
+# — NL2SQL dependencies (matching main requirements.txt)
+sqlparse==0.5.1
+pyodbc==5.1.0
 
 # — Azure AI Evaluation SDK
 azure-ai-evaluation
 
-# - Key Vault (if you use it for secrets)
-azure-keyvault-secrets==4.7.0
+# — Web server and instrumentation
+uvicorn[standard]==0.34.1
+opentelemetry-api==1.27.0
+opentelemetry-sdk==1.27.0
+opentelemetry-instrumentation>=0.48b0
+opentelemetry-exporter-otlp
+opentelemetry-instrumentation-fastapi>=0.48b0
+opentelemetry-instrumentation-httpx>=0.48b0
 
-# (Optional) If you ever load from a .env in this venv:
-# python-dotenv
+# — Azure Monitor OpenTelemetry (matching main requirements.txt)
+azure-monitor-opentelemetry==1.6.0
+azure-monitor-opentelemetry-exporter>=1.0.0b28
+
+# Pin setuptools to avoid pkg_resources deprecation warnings
+setuptools<81
+

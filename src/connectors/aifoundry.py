@@ -1,6 +1,7 @@
 import logging
 import time
-import tiktoken
+
+# We'll import tiktoken lazily when needed
 
 from azure.identity import (
     ManagedIdentityCredential,
@@ -67,8 +68,15 @@ class GenAIModelClient:
             max_retries=self.max_retries
         )
 
-        # tokenizer for truncation/estimation
-        self._tokenizer = tiktoken.encoding_for_model(self.tokenizer_model_name)
+        # tokenizer for truncation/estimation - lazy import
+        try:
+            import tiktoken
+            self._tokenizer = tiktoken.encoding_for_model(self.tokenizer_model_name)
+            self._tiktoken_available = True
+        except ImportError:
+            logging.warning("tiktoken not available - token counting and text truncation will be limited")
+            self._tokenizer = None
+            self._tiktoken_available = False
 
     def get_completion(self, prompt: str, max_tokens: int = 800) -> str:
         """
@@ -102,12 +110,21 @@ class GenAIModelClient:
         short = text.replace("\n", " ")[:100]
         logging.info(f"[genai] embeddings text: {short!r}")
 
-        tok_count = len(self._tokenizer.encode(text))
-        if tok_count > self.max_embedding_tokens:
-            summary_prompt = (
-                f"Reduce to {self.max_embedding_tokens} tokens, preserving coherence: {text}"
-            )
-            text = self.get_completion(summary_prompt)
+        if self._tokenizer:
+            tok_count = len(self._tokenizer.encode(text))
+            if tok_count > self.max_embedding_tokens:
+                summary_prompt = (
+                    f"Reduce to {self.max_embedding_tokens} tokens, preserving coherence: {text}"
+                )
+                text = self.get_completion(summary_prompt)
+        else:
+            # Fallback: use simple character count estimation (rough approximation)
+            estimated_tokens = len(text) // 4  # Rough estimate: ~4 chars per token
+            if estimated_tokens > self.max_embedding_tokens:
+                # Simple truncation based on character count
+                max_chars = self.max_embedding_tokens * 4
+                text = text[:max_chars] + "..." if len(text) > max_chars else text
+                logging.warning("Used character-based truncation due to missing token counting library")
             logging.info(f"[genai] text rewritten to fit {self.max_embedding_tokens} tokens")
 
         if self.embeddings_backend == "azure_openai":
@@ -133,6 +150,15 @@ class GenAIModelClient:
             raise ValueError(f"Unknown embeddings backend: {self.embeddings_backend}")
 
     def _truncate(self, text: str, max_tokens: int) -> str:
+        if not self._tokenizer:
+            # Fallback: use simple character count estimation
+            estimated_tokens = len(text) // 4  # Rough estimate: ~4 chars per token
+            if estimated_tokens <= max_tokens:
+                return text
+            logging.info(f"[genai] truncating input from ~{estimated_tokens} to {max_tokens} tokens (character-based estimate)")
+            max_chars = max_tokens * 4
+            return text[:max_chars]
+        
         tokens = self._tokenizer.encode(text)
         if len(tokens) <= max_tokens:
             return text

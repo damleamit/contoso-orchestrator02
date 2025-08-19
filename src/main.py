@@ -7,7 +7,12 @@ from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+try:
+    from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+    HTTPX_INSTRUMENTATION_AVAILABLE = True
+except ImportError:
+    HTTPX_INSTRUMENTATION_AVAILABLE = False
+    logging.warning("HTTPXClientInstrumentor not available - HTTP client telemetry will be disabled")
 from orchestration.orchestrator import Orchestrator
 
 from connectors.appconfig import AppConfigClient
@@ -105,7 +110,8 @@ async def orchestrator_endpoint(request: Request):
         media_type="text/event-stream"
     )
 
-HTTPXClientInstrumentor().instrument()
+if HTTPX_INSTRUMENTATION_AVAILABLE:
+    HTTPXClientInstrumentor().instrument()
 FastAPIInstrumentor.instrument_app(app)
 
 # Run the app locally
