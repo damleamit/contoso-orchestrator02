@@ -5,7 +5,7 @@ from connectors.cosmosdb import CosmosDBClient
 from connectors.appconfig import AppConfigClient
 from strategies.agent_strategy_factory import AgentStrategyFactory
 
-
+# this is an orchestrator code to send req to models based on context
 class Orchestrator:
     def __init__(self, conversation_id: str):
         # initializations
